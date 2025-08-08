@@ -12,7 +12,7 @@
 </head>
 <body>
   <iframe 
-    src="https://www.youtube.com/embed/YOUR_LIVE_VIDEO_ID?autoplay=1&mute=1" 
+    src="https://www.youtube.com/embed/3wTWn0hVPU8?autoplay=1&mute=1" 
     allow="autoplay; encrypted-media" 
     allowfullscreen
   ></iframe>
