@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Live</title>
+  <title>İmren Tarım Depo Canlı Test Yayını</title>
   <style>
     html,body {height:100%; margin:0; background:#000;}
     #wrap {position:fixed; inset:0;}
