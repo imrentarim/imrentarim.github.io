@@ -6,11 +6,6 @@
   <title>İmren Tarım Depo Canlı Test Yayını</title>
 
   <!-- Force HTTPS (prevents referrer/key issues and improves embed reliability) -->
-  <script>
-    if (location.protocol !== 'https:') {
-      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
-    }
-  </script>
 
   <style>
     html,body {height:100%; margin:0; background:#000;}
@@ -26,7 +21,7 @@
 </head>
 <body>
   <div id="wrap">
-    <div id="offline">Yayın offline görünüyor. (Sayfa açılışında tek kontrol yapılır.)</div>
+    <div id="offline">Yayın offline görünüyor. (Sayfa açılışında tek kontrol yapılır.) test 6</div>
     <iframe id="player"
       allow="autoplay; encrypted-media; picture-in-picture"
       allowfullscreen></iframe>
