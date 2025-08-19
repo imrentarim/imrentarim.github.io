@@ -13,7 +13,7 @@
 </head>
 <body>
   <div id="wrap">
-    <div id="offline">Yayın offline görünüyor. Canlı başladığında otomatik yenilenecek.</div>
+    <div id="offline">Yayın offline görünüyor. Canlı başladığında otomatik yenilenecek. Test .</div>
     <iframe id="player"
       allow="autoplay; encrypted-media; picture-in-picture"
       allowfullscreen
