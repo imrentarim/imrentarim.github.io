@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="wrap">
-    <div id="offline">Yayın offline görünüyor. (Sayfa açılışında tek kontrol yapılır.) test 4</div>
+    <div id="offline">Yayın offline görünüyor. (Sayfa açılışında tek kontrol yapılır.) working</div>
     <iframe id="player"
       allow="autoplay; encrypted-media; picture-in-picture"
       allowfullscreen
