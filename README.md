@@ -13,7 +13,7 @@
 </head>
 <body>
   <div id="wrap">
-    <div id="offline">Yayın offline görünüyor. Canlı başladığında otomatik yenilenecek.</div>
+    <div id="offline">Yayın offline görünüyor. Canlı başladığında otomatik yenilenecek. test 2.</div>
     <iframe id="player"
       allow="autoplay; encrypted-media; picture-in-picture"
       allowfullscreen
@@ -24,7 +24,7 @@
  <script>
   const CHANNEL_ID = "UCfO4zU-8bFQXyX4fE6eY-mQ";   // your UC… channel ID
   const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys"; // restrict in GCP!
-  const CHECK_MS   = 60_000; // re-check every 60s
+  const CHECK_MS   = 600_000; // re-check every 60s
   const iframe = document.getElementById('player');
   const offline = document.getElementById('offline');
 
