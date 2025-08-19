@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="wrap">
-    <div id="offline">Yayın offline görünüyor. (Sayfa açılışında tek kontrol yapılır.) test 3</div>
+    <div id="offline">Yayın offline görünüyor. (Sayfa açılışında tek kontrol yapılır.) test 4</div>
     <iframe id="player"
       allow="autoplay; encrypted-media; picture-in-picture"
       allowfullscreen
@@ -29,15 +29,14 @@
 <script>
   // === CONFIG ===
   const CHANNEL_ID = "UCfO4zU-8bFQXyX4fE6eY-mQ";
-  const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys"; // keep restricted to your domain
+  const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys";
 
   const iframe  = document.getElementById('player');
   const offline = document.getElementById('offline');
 
-  // Optional manual override: https://site/?video=VIDEO_ID (skips API)
+  // Optional manual override: ?video=VIDEO_ID
   const forced = new URLSearchParams(location.search).get('video');
   if (forced) {
-    console.log("[YT] Forced video via ?video=...", forced);
     setEmbed(forced);
   } else {
     initOnce();
@@ -45,11 +44,9 @@
 
   function setEmbed(videoId) {
     const bust = Date.now();
-    const src =
+    iframe.src =
       `https://www.youtube.com/embed/${videoId}` +
       `?autoplay=1&mute=1&playsinline=1&modestbranding=1&rel=0&origin=${location.origin}&cb=${bust}`;
-    console.log("[YT] Embedding:", src);
-    iframe.src = src;
     offline.style.display = 'none';
   }
 
@@ -62,20 +59,19 @@
   async function ytSearch(eventType) {
     const url = new URL('https://www.googleapis.com/youtube/v3/search');
     url.search = new URLSearchParams({
-      part: 'snippet',
+      part: 'id',                 // <-- key change
       channelId: CHANNEL_ID,
-      eventType,         // 'live' or 'upcoming'
+      eventType,                  // 'live' or 'upcoming'
       type: 'video',
       maxResults: '1',
       order: 'date',
-      fields: 'items(id/videoId),error',
+      fields: 'items(id/videoId)',// <-- valid with part=id
       key: API_KEY
     });
     console.log("[YT] Fetch:", url.toString());
     const res = await fetch(url, { cache: 'no-store' });
     console.log("[YT] Status:", res.status);
-    let data;
-    try { data = await res.json(); } catch { data = {}; }
+    const data = await res.json().catch(() => ({}));
     console.log("[YT] Data:", data);
     if (!res.ok) throw new Error(data?.error?.message || ("API " + res.status));
     return data?.items?.[0]?.id?.videoId || null;
@@ -83,12 +79,8 @@
 
   async function initOnce() {
     try {
-      // 1) Try live
       let videoId = await ytSearch('live');
-
-      // 2) If not live, try upcoming (countdown)
       if (!videoId) videoId = await ytSearch('upcoming');
-
       if (videoId) setEmbed(videoId);
       else showOffline("no live/upcoming found");
     } catch (e) {
@@ -97,5 +89,6 @@
     }
   }
 </script>
+
 </body>
 </html>
