@@ -22,33 +22,16 @@
   </div>
 
  <script>
+  // === CONFIG ===
   const CHANNEL_ID = "UCfO4zU-8bFQXyX4fE6eY-mQ";   // your UC… channel ID
-  const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys"; // restrict in GCP!
-  const CHECK_MS   = 60_000; // re-check every 60s
-  const iframe = document.getElementById('player');
+  const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys"; // keep restricted
+  const CACHE_TTL  = 5 * 60 * 1000; // 5 minutes in ms
+
+  // === DOM refs ===
+  const iframe  = document.getElementById('player');
   const offline = document.getElementById('offline');
 
-  async function ytSearch(eventType) {
-    const url = new URL('https://www.googleapis.com/youtube/v3/search');
-    url.search = new URLSearchParams({
-      part: 'snippet',
-      channelId: CHANNEL_ID,
-      eventType,           // 'live' or 'upcoming'
-      type: 'video',
-      maxResults: '1',
-      order: 'date',
-      key: API_KEY,
-      // Trim payload a bit
-      fields: 'items(id/videoId)'
-    });
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('YouTube API ' + res.status);
-    const data = await res.json();
-    return (data.items && data.items[0] && data.items[0].id.videoId) || null;
-  }
-
   function setEmbed(videoId) {
-    // cache-bust param to avoid stubborn caching on some proxies
     const bust = Date.now();
     iframe.src =
       `https://www.youtube.com/embed/${videoId}` +
@@ -56,43 +39,71 @@
     offline.style.display = 'none';
   }
 
-  async function setLiveEmbed() {
-    try {
-      // 1) Try currently live
-      let videoId = await ytSearch('live');
+  function showOffline() {
+    iframe.removeAttribute('src');
+    offline.style.display = 'grid';
+  }
 
-      // 2) If none live, try upcoming (will show countdown)
-      if (!videoId) {
-        videoId = await ytSearch('upcoming');
+  async function searchVideo(eventType) {
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.search = new URLSearchParams({
+      part: 'snippet',
+      channelId: CHANNEL_ID,
+      eventType,
+      type: 'video',
+      maxResults: '1',
+      order: 'date',
+      fields: 'items(id/videoId)',
+      key: API_KEY
+    });
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('YouTube API ' + res.status);
+    const data = await res.json();
+    return data.items?.[0]?.id?.videoId || null;
+  }
+
+  async function fetchVideoId() {
+    // Try live first, then upcoming
+    let videoId = await searchVideo('live');
+    if (!videoId) videoId = await searchVideo('upcoming');
+    return videoId;
+  }
+
+  async function initOnce() {
+    try {
+      // Check localStorage cache
+      const cached = localStorage.getItem('ytLiveCache');
+      if (cached) {
+        const { videoId, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          if (videoId) return setEmbed(videoId);
+          return showOffline();
+        }
       }
+
+      // No valid cache → call API
+      const videoId = await fetchVideoId();
+      // Save result with timestamp
+      localStorage.setItem('ytLiveCache', JSON.stringify({
+        videoId,
+        timestamp: Date.now()
+      }));
 
       if (videoId) {
         setEmbed(videoId);
       } else {
-        iframe.removeAttribute('src');
-        offline.style.display = 'grid';
+        showOffline();
       }
     } catch (e) {
       console.error(e);
-      // API key misconfigured, quota, or network issue
-      // Keep last good embed if present; otherwise show offline.
-      if (!iframe.src) offline.style.display = 'grid';
+      showOffline();
     }
   }
 
-  // Initial load + periodic refresh (so it picks up new lives)
-  setLiveEmbed();
-  setInterval(setLiveEmbed, CHECK_MS);
-
-  // Optional: small periodic re-embed to keep long sessions fresh
-  setInterval(() => {
-    if (iframe.src) {
-      const u = new URL(iframe.src);
-      u.searchParams.set('cb', Date.now());
-      iframe.src = u.toString();
-    }
-  }, 30 * 60 * 1000); // every 30 min
+  // Run only once on page load
+  initOnce();
 </script>
+
 
 </body>
 </html>
