@@ -21,52 +21,78 @@
     </iframe>
   </div>
 
-  <script>
-    const CHANNEL_ID = "UCfO4zU-8bFQXyX4fE6eY-mQ";          // e.g. starts with "UC..."
-    const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys";             // YouTube Data API v3 key
-    const CHECK_MS   = 60_000;                     // re-check every 60s
-    const iframe = document.getElementById('player');
-    const offline = document.getElementById('offline');
+ <script>
+  const CHANNEL_ID = "UCfO4zU-8bFQXyX4fE6eY-mQ";   // your UC… channel ID
+  const API_KEY    = "AIzaSyBMT-m7UyRnYLvTtD7dJAftOG-CPMipDys"; // restrict in GCP!
+  const CHECK_MS   = 60_000; // re-check every 60s
+  const iframe = document.getElementById('player');
+  const offline = document.getElementById('offline');
 
-    async function setLiveEmbed() {
-      try {
-        // Search for an active live video on this channel
-        const url = new URL('https://www.googleapis.com/youtube/v3/search');
-        url.search = new URLSearchParams({
-          part: 'snippet',
-          channelId: CHANNEL_ID,
-          eventType: 'live',
-          type: 'video',
-          maxResults: '1',
-          order: 'date',
-          key: API_KEY
-        });
+  async function ytSearch(eventType) {
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.search = new URLSearchParams({
+      part: 'snippet',
+      channelId: CHANNEL_ID,
+      eventType,           // 'live' or 'upcoming'
+      type: 'video',
+      maxResults: '1',
+      order: 'date',
+      key: API_KEY,
+      // Trim payload a bit
+      fields: 'items(id/videoId)'
+    });
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('YouTube API ' + res.status);
+    const data = await res.json();
+    return (data.items && data.items[0] && data.items[0].id.videoId) || null;
+  }
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('API error ' + res.status);
-        const data = await res.json();
+  function setEmbed(videoId) {
+    // cache-bust param to avoid stubborn caching on some proxies
+    const bust = Date.now();
+    iframe.src =
+      `https://www.youtube.com/embed/${videoId}` +
+      `?autoplay=1&mute=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1&origin=${location.origin}&cb=${bust}`;
+    offline.style.display = 'none';
+  }
 
-        if (data.items && data.items.length) {
-          const videoId = data.items[0].id.videoId;
-          // Use the standard embed for the specific video ID
-          iframe.src =
-            `https://www.youtube.com/embed/${videoId}` +
-            `?autoplay=1&mute=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1&origin=${location.origin}`;
-          offline.style.display = 'none';
-        } else {
-          // No active live – fall back to channel placeholder (or keep offline message)
-          iframe.removeAttribute('src');
-          offline.style.display = 'grid';
-        }
-      } catch (e) {
-        console.error(e);
+  async function setLiveEmbed() {
+    try {
+      // 1) Try currently live
+      let videoId = await ytSearch('live');
+
+      // 2) If none live, try upcoming (will show countdown)
+      if (!videoId) {
+        videoId = await ytSearch('upcoming');
+      }
+
+      if (videoId) {
+        setEmbed(videoId);
+      } else {
+        iframe.removeAttribute('src');
         offline.style.display = 'grid';
       }
+    } catch (e) {
+      console.error(e);
+      // API key misconfigured, quota, or network issue
+      // Keep last good embed if present; otherwise show offline.
+      if (!iframe.src) offline.style.display = 'grid';
     }
+  }
 
-    // Initial load + periodic re-check (useful if you start streaming later)
-    setLiveEmbed();
-    setInterval(setLiveEmbed, CHECK_MS);
-  </script>
+  // Initial load + periodic refresh (so it picks up new lives)
+  setLiveEmbed();
+  setInterval(setLiveEmbed, CHECK_MS);
+
+  // Optional: small periodic re-embed to keep long sessions fresh
+  setInterval(() => {
+    if (iframe.src) {
+      const u = new URL(iframe.src);
+      u.searchParams.set('cb', Date.now());
+      iframe.src = u.toString();
+    }
+  }, 30 * 60 * 1000); // every 30 min
+</script>
+
 </body>
 </html>
